@@ -1,0 +1,56 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+dist/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environment
+venv/
+env/
+.env
+
+# Jupyter Notebook
+.ipynb_checkpoints/
+*/.ipynb_checkpoints/*
+
+# Data Files (Ignore large datasets)
+data/raw/*
+data/processed/*
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+
+# Trained Models
+models/*
+!models/.gitkeep
+
+# Kaggle Files
+kaggle.json
+
+# Large Files
+*.csv
+*.zip
+*.parquet
+*.h5
+*.pkl
+*.joblib
+
+# Operating System Files
+.DS_Store
+Thumbs.db
+
+# IDE Settings
+.vscode/
+.idea/
+
+# Logs
+*.log
+
+# Temporary Files
+*.tmp
+*.temp
