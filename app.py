@@ -6,79 +6,57 @@ import joblib
 from datetime import datetime
 
 st.set_page_config(
-    page_title="Sticker Sales Forecaster",
-    layout="centered",
-    page_icon="📊"
+    page_title="Sticker Sales Forecasting System",
+    layout="centered"
 )
 
 
-def engineer_features_inference(input_df, train_df):
-    df = input_df.copy()
+def engineer_features(df):
+    df = df.copy()
 
-    df["year"] = df["date"].dt.year
-    df["month"] = df["date"].dt.month
-    df["day"] = df["date"].dt.day
-    df["dayofweek"] = df["date"].dt.dayofweek
-    df["is_weekend"] = (df["dayofweek"] >= 5).astype(int)
+    df['year'] = df['date'].dt.year
+    df['month'] = df['date'].dt.month
+    df['day'] = df['date'].dt.day
+    df['dayofweek'] = df['date'].dt.dayofweek
+    df['is_weekend'] = (df['date'].dt.dayofweek >= 5).astype(int)
 
-    df["month_sin"] = np.sin(2 * np.pi * df["month"] / 12.0)
-    df["month_cos"] = np.cos(2 * np.pi * df["month"] / 12.0)
-    df["dayofweek_sin"] = np.sin(2 * np.pi * df["dayofweek"] / 7.0)
-    df["dayofweek_cos"] = np.cos(2 * np.pi * df["dayofweek"] / 7.0)
+    df['month_sin'] = np.sin(2 * np.pi * df['month'] / 12.0)
+    df['month_cos'] = np.cos(2 * np.pi * df['month'] / 12.0)
+    df['dayofweek_sin'] = np.sin(2 * np.pi * df['dayofweek'] / 7.0)
+    df['dayofweek_cos'] = np.cos(2 * np.pi * df['dayofweek'] / 7.0)
 
-    combined = pd.concat(
-        [
-            train_df[["country", "store", "product"]],
-            df[["country", "store", "product"]]
-        ],
-        ignore_index=True
+    df = pd.get_dummies(
+        df,
+        columns=['country', 'store', 'product'],
+        drop_first=False
     )
 
-    combined_encoded = pd.get_dummies(
-        combined,
-        columns=["country", "store", "product"]
-    )
+    for col in df.select_dtypes(include=['bool']).columns:
+        df[col] = df[col].astype(int)
 
-    df_encoded = combined_encoded.iloc[-1:].copy()
-
-    numerical_features = [
-        "year",
-        "month",
-        "day",
-        "dayofweek",
-        "is_weekend",
-        "month_sin",
-        "month_cos",
-        "dayofweek_sin",
-        "dayofweek_cos"
-    ]
-
-    for col in numerical_features:
-        df_encoded[col] = df[col].values[0]
-
-    scaler_features = scaler.feature_names_in_
-
-    for col in scaler_features:
-        if col not in df_encoded.columns:
-            df_encoded[col] = 0
-
-    df_encoded = df_encoded[scaler_features]
-
-    return df_encoded
+    return df
 
 
 @st.cache_resource
 def load_system_artifacts():
+
     model = tf.keras.models.load_model(
-        "sticker_sales_model.h5",
+        'sticker_sales_model.h5',
         compile=False
     )
 
-    scaler = joblib.load("feature_scaler.pkl")
+    scaler = joblib.load(
+        'feature_scaler.pkl'
+    )
 
-    train_df = pd.read_csv("train.csv")
+    train_df = pd.read_csv(
+        'train.csv',
+        nrows=100
+    )
 
-    train_df["date"] = pd.to_datetime(train_df["date"])
+    train_df['date'] = pd.to_datetime(
+        train_df['date']
+    )
 
     return model, scaler, train_df
 
@@ -94,63 +72,130 @@ except Exception as e:
     st.stop()
 
 
-st.title("📊 Sticker Sales Forecasting App")
-
 st.markdown(
-    "This application predicts future sticker sales using a trained Deep Learning model."
+    """
+    <style>
+
+    .main-title {
+        text-align: center;
+        font-size: 42px;
+        font-weight: 700;
+        margin-bottom: 35px;
+    }
+
+    .result-box {
+        padding: 20px;
+        border-radius: 12px;
+        border: 1px solid #ddd;
+        text-align: center;
+    }
+
+    </style>
+    """,
+    unsafe_allow_html=True
 )
 
 
-col1, col2 = st.columns(2)
-
-with col1:
-    selected_date = st.date_input(
-        "Select Date",
-        datetime(2026, 1, 1)
-    )
-
-    selected_country = st.selectbox(
-        "Select Country",
-        sorted(train_df["country"].unique())
-    )
+st.markdown(
+    '<div class="main-title">Sticker Sales Forecasting System</div>',
+    unsafe_allow_html=True
+)
 
 
-with col2:
-    selected_store = st.selectbox(
-        "Select Store",
-        sorted(train_df["store"].unique())
-    )
-
-    selected_product = st.selectbox(
-        "Select Product",
-        sorted(train_df["product"].unique())
-    )
+st.subheader("Forecast Settings")
 
 
-if st.button("Predict Sales", type="primary"):
+selected_date = st.date_input(
+    "Forecast Date",
+    datetime(2026, 1, 1)
+)
+
+
+selected_country = st.selectbox(
+    "Country",
+    sorted(train_df['country'].unique())
+)
+
+
+selected_store = st.selectbox(
+    "Store",
+    sorted(train_df['store'].unique())
+)
+
+
+selected_product = st.selectbox(
+    "Product",
+    sorted(train_df['product'].unique())
+)
+
+
+st.write("")
+
+
+if st.button(
+    "Generate Forecast",
+    type="primary",
+    use_container_width=True
+):
 
     input_data = pd.DataFrame(
         {
-            "date": [pd.to_datetime(selected_date)],
-            "country": [selected_country],
-            "store": [selected_store],
-            "product": [selected_product]
+            'date': [pd.to_datetime(selected_date)],
+            'country': [selected_country],
+            'store': [selected_store],
+            'product': [selected_product]
         }
     )
 
-    with st.spinner("Calculating forecast using deep learning..."):
 
-        features = engineer_features_inference(
-            input_data,
+    with st.spinner(
+        "Processing prediction..."
+    ):
+
+        train_processed = engineer_features(
             train_df
         )
 
-        features_scaled = scaler.transform(features)
+        input_processed = engineer_features(
+            input_data
+        )
+
+
+        _, input_aligned = train_processed.align(
+            input_processed,
+            join='left',
+            axis=1,
+            fill_value=0
+        )
+
+
+        for col in [
+            'id',
+            'date',
+            'num_sold'
+        ]:
+            if col in input_aligned.columns:
+                input_aligned = input_aligned.drop(
+                    col,
+                    axis=1
+                )
+
+
+        input_aligned = input_aligned[
+            scaler.feature_names_in_
+        ]
+
+
+        features_scaled = scaler.transform(
+            input_aligned
+        )
+
 
         prediction = model.predict(
             features_scaled,
             verbose=0
         )
+
 
         final_prediction = int(
             max(
@@ -159,9 +204,34 @@ if st.button("Predict Sales", type="primary"):
             )
         )
 
-        st.success("Prediction Complete!")
 
+    st.success(
+        "Forecast generated successfully"
+    )
+
+
+    st.subheader("Forecast Result")
+
+
+    col1, col2, col3 = st.columns(3)
+
+
+    with col1:
         st.metric(
-            label="Predicted Units Sold",
-            value=final_prediction
+            "Predicted Units Sold",
+            f"{final_prediction:,}"
+        )
+
+
+    with col2:
+        st.metric(
+            "Country",
+            selected_country
+        )
+
+
+    with col3:
+        st.metric(
+            "Product",
+            selected_product
         )
