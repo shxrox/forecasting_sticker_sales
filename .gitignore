@@ -34,6 +34,8 @@ kaggle.json
 
 # Large Files
 *.csv
+!train.csv
+!test.csv
 *.zip
 *.parquet
 *.joblib
