@@ -36,8 +36,6 @@ kaggle.json
 *.csv
 *.zip
 *.parquet
-*.h5
-*.pkl
 *.joblib
 
 # Operating System Files
